@@ -1,6 +1,5 @@
 .env
 /venv
 /vector_index
-/data
-/prospects
 /src/__pycache__
+salida.log

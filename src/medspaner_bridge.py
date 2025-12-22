@@ -26,7 +26,7 @@ def run_medspaner_question(texto: str):
     # Path al JSON generado por MEDSPANER
     json_output = os.path.abspath(os.path.join(
         os.path.dirname(medspaner_script),
-        "resultado_medspaner.json"
+        "medspaner_output.json"
     ))
 
     # Borrar JSON previo si existe

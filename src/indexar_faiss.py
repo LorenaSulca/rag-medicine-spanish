@@ -47,7 +47,6 @@ def generar_embedding(texto):
 
 def indexar_faiss(chunks_json_path, documento_id):
 
-    # Crear carpeta si no existe
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     # Cargar chunks
@@ -60,7 +59,7 @@ def indexar_faiss(chunks_json_path, documento_id):
     metadata_list = []
     id_map = {}
 
-    # Procesar cada chunk
+    # Producir embeddings
     for idx, chunk in enumerate(chunks):
         chunk_uid = f"{documento_id}_{chunk['chunk_id']}"
         texto = clip_text_to_max_tokens(chunk["text"])
@@ -80,35 +79,64 @@ def indexar_faiss(chunks_json_path, documento_id):
             "text": texto
         })
 
-        id_map[chunk_uid] = idx
+    # Convertir a matriz
+    matrix_new = np.vstack(embeddings).astype("float32")
+    faiss.normalize_L2(matrix_new)
 
-    # Convert embeddings a matriz numpy
-    matrix = np.vstack(embeddings)
+    # Cargar índice anterior si existe 
+    if os.path.exists(INDEX_PATH):
+        print("Cargando índice existente…")
+        index = faiss.read_index(INDEX_PATH)
 
-    # Crear índice FAISS (cosine similarity normalizada)
-    d = matrix.shape[1]
-    index = faiss.IndexFlatIP(d)
+        # Validar dimensión
+        if index.d != matrix_new.shape[1]:
+            raise ValueError("Dimensión de embedding incompatible con el índice existente.")
 
-    # Normalizar vectores para similitud coseno
-    faiss.normalize_L2(matrix)
+        index.add(matrix_new)
+    else:
+        print("Creando nuevo indice")
+        index = faiss.IndexFlatIP(matrix_new.shape[1])
+        index.add(matrix_new)
 
-    # Agregar al índice
-    index.add(matrix)
-
-    # Guardar índice
+    # Guardar índice actualizado
     faiss.write_index(index, INDEX_PATH)
-    print(f"Índice guardado en: {INDEX_PATH}")
+    print(f"Indice actualizado guardado en {INDEX_PATH}")
 
-    # Guardar metadata
+    # Metadata
+    if os.path.exists(META_PATH):
+        with open(META_PATH, "r", encoding="utf-8") as f:
+            old_meta = json.load(f)
+    else:
+        old_meta = []
+
+    merged_meta = old_meta + metadata_list
+
     with open(META_PATH, "w", encoding="utf-8") as f:
-        json.dump(metadata_list, f, indent=2, ensure_ascii=False)
+        json.dump(merged_meta, f, indent=2, ensure_ascii=False)
+    print("Metadata actualizada.")
 
-    # Guardar mapping
+    # Mapping
+    if os.path.exists(MAP_PATH):
+        with open(MAP_PATH, "r", encoding="utf-8") as f:
+            old_map = json.load(f)
+    else:
+        old_map = {}
+
+    # Indice FAISS simplemente agrega vectores al final del index
+    base_offset = len(old_map)
+
+    for i, meta in enumerate(metadata_list):
+        uid = meta["uid"]
+        id_map[uid] = base_offset + i
+
+    merged_map = {**old_map, **id_map}
+
     with open(MAP_PATH, "w", encoding="utf-8") as f:
-        json.dump(id_map, f, indent=2, ensure_ascii=False)
+        json.dump(merged_map, f, indent=2, ensure_ascii=False)
+    print("Mapping actualizado.")
 
-    print("Metadata y mapping guardados.")
-    print("Indexación completada con éxito.")
+    print("\n✓ Indexación incremental completada.\n")
+
 
 
 if __name__ == "__main__":

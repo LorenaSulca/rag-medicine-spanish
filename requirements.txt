@@ -4,3 +4,4 @@ openai>=1.0.0
 tiktoken
 numpy
 pdfplumber
+bert-score

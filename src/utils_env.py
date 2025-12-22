@@ -20,6 +20,10 @@ def get_medspaner_config():
 
 def get_data_dir():
     return get_env("DATA_DIR")
+
+def get_QA_dir():
+    return get_env("QA_DIR")
+
 def get_openai_api_key():
     api_key = os.getenv("OPENAI_API_KEY")
     return api_key
