@@ -12,9 +12,9 @@ from utils_env import (
 
 def run_medspaner_question(texto: str):
 
-    old_python = get_old_python()
-    medspaner_script = get_medspaner_script()
-    medspaner_config = get_medspaner_config()
+    old_python = os.path.dirname(os.getcwd()) +get_old_python()
+    medspaner_script = os.path.dirname(os.getcwd()) + get_medspaner_script()
+    medspaner_config = os.path.dirname(os.getcwd()) + get_medspaner_config()
 
     # Archivo temporal con la pregunta
     with tempfile.NamedTemporaryFile(
@@ -78,9 +78,9 @@ def run_medspaner_question(texto: str):
 
 def run_medspaner_prospect(input_path: str, output_path: str):
 
-    old_python = get_old_python()
-    medspaner_script = get_medspaner_script()
-    medspaner_config = get_medspaner_config()
+    old_python = os.path.dirname(os.getcwd()) + get_old_python() 
+    medspaner_script = os.path.dirname(os.getcwd()) + get_medspaner_script()
+    medspaner_config = os.path.dirname(os.getcwd()) + get_medspaner_config()
 
     # Directorio root de MEDSPANER (para cwd)
     medspaner_root = os.path.abspath(os.path.join(os.path.dirname(medspaner_script)))
@@ -100,7 +100,7 @@ def run_medspaner_prospect(input_path: str, output_path: str):
         "-input", input_path
     ]
 
-    print("\n>>> Ejecutando MEDSPANER")
+    print("\n Ejecutando MEDSPANER")
     print("CMD:", " ".join(cmd))
 
     result = subprocess.run(
@@ -147,9 +147,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     data_dir = get_data_dir()
-
-    input_path = os.path.join(data_dir, args.input_txt)
-    output_path = os.path.join(data_dir, args.output_json)
+    input_path = os.path.dirname(os.getcwd()) + data_dir + args.input_txt
+    output_path = os.path.dirname(os.getcwd()) + data_dir +  args.output_json
 
     if not os.path.exists(input_path):
         raise FileNotFoundError(f"El archivo {input_path} no existe")

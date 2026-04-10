@@ -94,7 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("output_file", help="Nombre del archivo JSON a generar")
     args = parser.parse_args()
 
-    DATA_DIR = get_data_dir()
+    DATA_DIR = os.path.dirname(os.getcwd()) + get_data_dir()
 
     path_texto = os.path.join(DATA_DIR, args.texto_file)
     path_entidades = os.path.join(DATA_DIR, args.entidades_file)

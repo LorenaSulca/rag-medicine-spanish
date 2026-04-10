@@ -151,7 +151,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
 
-    DATA_DIR = get_data_dir()
+    DATA_DIR = os.path.dirname(os.getcwd()) + get_data_dir()
 
     chunks_json_path = os.path.join(DATA_DIR, args.chunks_file)
 
