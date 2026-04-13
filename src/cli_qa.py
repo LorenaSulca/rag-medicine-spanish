@@ -1,5 +1,3 @@
-# cli_qa.py
-
 from answer_generator import answer_question
 
 def main():
@@ -17,12 +15,21 @@ def main():
 
         print("\nRESPUESTA\n")
         print(result["answer"])
-        print("\n--- CONTEXTO USADO ---\n")
+        print("STATUS:", result.get("status"))
+        if result.get("chunks"):
+            print("\n--- CONTEXTO USADO ---\n")
 
-        for i, ch in enumerate(result["chunks"], start=1):
-            print(f"[Fuente {i} | doc: {ch.get('document_id')} | chunk: {ch.get('chunk_id')} | score: {round(ch.get('score', 0.0),3)}]")
-            print(ch.get("text", "").strip())
-            print("")
+            for i, ch in enumerate(result["chunks"], start=1):
+                print(
+                    f"[Fuente {i} | doc: {ch.get('document_id')} | "
+                    f"chunk: {ch.get('chunk_id')} | "
+                    f"score: {round(ch.get('score', 0.0), 3)}]"
+                )
+                print(ch.get("text", "").strip())
+                print("")
+        else:
+            print("\n--- CONTEXTO USADO ---\n")
+            print("No se muestra contexto porque la respuesta fue rechazada o no había evidencia suficiente.\n")
 
 if __name__ == "__main__":
     main()
