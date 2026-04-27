@@ -1,6 +1,6 @@
 .env
 /venv
 /vector_index
-/src/__pycache__
+**/__pycache__/
 salida.log
 medspaner/
