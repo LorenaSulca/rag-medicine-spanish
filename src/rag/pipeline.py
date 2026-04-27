@@ -10,6 +10,7 @@ from rag.schemas import (
     RAGResponse,
 )
 
+from retrieval.hybrid_retriever import retrieve_hybrid
 from retrieval.base_retriever import retrieve_base
 from generation.generator import generate_answer
 from validation.sentence_validator import validate_sentences
@@ -117,7 +118,10 @@ class RAGPipeline:
 
     def _retrieve(self, question: str) -> RetrievalResult:
         if self.config.get("hybrid_retrieval", False):
-            raise NotImplementedError("hybrid_retrieval aún no está implementado.")
+            raw_chunks, signals, medspaner_raw = retrieve_hybrid(
+                question,
+                dynamic_k=self.config.get("dynamic_k", False),
+            )
         else:
             raw_chunks, signals, medspaner_raw = retrieve_base(question)
 

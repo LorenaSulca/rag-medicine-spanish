@@ -6,18 +6,11 @@ EXPERIMENTS = {
         "dynamic_k": False,
         "refine_generation": False,
     },
-    "propuesta_1_full": {
+    "p1_retrieval": {
         "hybrid_retrieval": True,
-        "citation_prompt": True,
-        "sentence_validation": True,
+        "citation_prompt": False,
+        "sentence_validation": False,
         "dynamic_k": False,
         "refine_generation": False,
-    },
-    "propuesta_2_full": {
-        "hybrid_retrieval": True,
-        "citation_prompt": True,
-        "sentence_validation": True,
-        "dynamic_k": True,
-        "refine_generation": True,
     },
 }
