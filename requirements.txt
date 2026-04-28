@@ -5,3 +5,5 @@ tiktoken
 numpy
 pdfplumber
 bert-score
+rank-bm25
+scikit-learn
