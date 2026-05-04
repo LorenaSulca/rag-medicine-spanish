@@ -52,4 +52,15 @@ EXPERIMENTS = {
     "usr_partial_threshold": 0.01,
     "usr_invalid_threshold": 0.50,
     },
+    "propuesta_2_full": {
+    "hybrid_retrieval": True,
+    "dynamic_k": True,
+    "citation_prompt": True,
+    "sentence_validation": True,
+    "refine_generation": True,
+    "multi_validation": True,
+    "sentence_similarity_threshold": 0.20,
+    "usr_partial_threshold": 0.01,
+    "usr_invalid_threshold": 0.50,
+    },
 }

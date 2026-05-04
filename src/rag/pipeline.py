@@ -16,7 +16,7 @@ from retrieval.dynamic_retriever import retrieve_dynamic
 from generation.generator import generate_answer
 from generation.refiner import refine_answer
 from validation.sentence_validator import validate_sentences
-
+from validation.multi_validator import validate_multilevel
 
 NO_CONTEXT_MESSAGE = (
     "No se encontraron fragmentos relevantes en la base de prospectos para responder la pregunta."
@@ -172,10 +172,21 @@ class RAGPipeline:
         answer: str,
         retrieval: RetrievalResult,
     ) -> ValidationResult:
+        chunks = [c.to_dict() for c in retrieval.chunks]
+
+        if self.config.get("multi_validation", False):
+            return validate_multilevel(
+                answer=answer,
+                chunks=chunks,
+                threshold=self.config.get("sentence_similarity_threshold", 0.20),
+                partial_threshold=self.config.get("usr_partial_threshold", 0.01),
+                invalid_threshold=self.config.get("usr_invalid_threshold", 0.50),
+            )
+
         return validate_sentences(
             answer=answer,
-            chunks=[c.to_dict() for c in retrieval.chunks],
-            threshold=self.config.get("sentence_similarity_threshold", 0.22),
+            chunks=chunks,
+            threshold=self.config.get("sentence_similarity_threshold", 0.20),
             partial_threshold=self.config.get("usr_partial_threshold", 0.01),
             invalid_threshold=self.config.get("usr_invalid_threshold", 0.50),
         )

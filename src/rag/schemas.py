@@ -107,8 +107,8 @@ class ValidationResult:
             "citation_consistency": self.citation_consistency,
             "is_valid": self.is_valid,
             "decision": self.decision,
+            "multilevel": getattr(self, "multilevel", None),
         }
-
 
 @dataclass
 class RAGResponse:
