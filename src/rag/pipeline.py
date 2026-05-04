@@ -12,7 +12,9 @@ from rag.schemas import (
 
 from retrieval.hybrid_retriever import retrieve_hybrid
 from retrieval.base_retriever import retrieve_base
+from retrieval.dynamic_retriever import retrieve_dynamic
 from generation.generator import generate_answer
+from generation.refiner import refine_answer
 from validation.sentence_validator import validate_sentences
 
 
@@ -117,11 +119,15 @@ class RAGPipeline:
             )
 
     def _retrieve(self, question: str) -> RetrievalResult:
-        if self.config.get("hybrid_retrieval", False):
+        if self.config.get("dynamic_k", False):
+            raw_chunks, signals, medspaner_raw = retrieve_dynamic(question)
+
+        elif self.config.get("hybrid_retrieval", False):
             raw_chunks, signals, medspaner_raw = retrieve_hybrid(
                 question,
-                dynamic_k=self.config.get("dynamic_k", False),
+                dynamic_k=False,
             )
+
         else:
             raw_chunks, signals, medspaner_raw = retrieve_base(question)
 
@@ -154,7 +160,12 @@ class RAGPipeline:
         answer: str,
         retrieval: RetrievalResult,
     ) -> str:
-        raise NotImplementedError("refine_generation aún no está implementado.")
+        return refine_answer(
+            llm_client=self.llm_client,
+            question=question,
+            answer=answer,
+            chunks=[c.to_dict() for c in retrieval.chunks],
+    )
 
     def _validate_sentences(
         self,
