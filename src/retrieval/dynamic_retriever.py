@@ -84,7 +84,6 @@ def infer_query_complexity(question: str, signals: dict) -> dict:
         if any(term in q for term in terms):
             matched_intents.append(intent)
 
-    # Score simple, entendible y reportable en metodología.
     complexity_score = 0
     complexity_score += min(entity_count, 4)
     complexity_score += len(matched_intents)
@@ -132,6 +131,7 @@ def retrieve_dynamic(
     default_k: int = TOP_K,
     max_k: int = 8,
     candidate_k: int = 12,
+    index_variant: str = "sections",
 ):
     """
     Retrieval dinámico para Propuesta 2.
@@ -156,10 +156,12 @@ def retrieve_dynamic(
         top_k=dynamic_k,
         candidate_k=max(candidate_k, dynamic_k),
         dynamic_k=False,
+        index_variant=index_variant,
     )
 
     for ch in chunks:
         ch["dynamic_k"] = dynamic_k
         ch["query_complexity"] = complexity
+        ch["index_variant"] = ch.get("index_variant", index_variant)
 
     return chunks, signals, medspaner_output

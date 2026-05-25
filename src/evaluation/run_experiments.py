@@ -10,15 +10,13 @@ from rag import default_rag_client
 
 
 DEFAULT_EXPERIMENTS = [
-    "baseline",
-    "p1_retrieval",
-    "p1_citations",
-    "propuesta_1_full",
-    "p2_dynamic_retrieval",
-    "p2_refine",
-    "propuesta_2_full",
+    "baseline_flat",
+    "baseline_sections",
+    "propuesta_1_full_flat",
+    "propuesta_1_full_sections",
+    "propuesta_2_full_flat",
+    "propuesta_2_full_sections",
 ]
-
 
 SAFE_REJECTION_STATUSES = {"abstained", "invalidated", "no_context"}
 
@@ -41,7 +39,7 @@ def save_csv(path: str, rows: list[dict]):
     if not rows:
         return
 
-    fieldnames = list(rows[0].keys())
+    fieldnames = sorted({key for row in rows for key in row.keys()})
 
     with open(path, "w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
@@ -169,6 +167,17 @@ def run_one(client: OpenAI, item: dict, experiment: str) -> dict:
     response = rag.query(item["question"])
 
     chunks = response.get("chunks", [])
+    index_variants = sorted({
+        c.get("index_variant")
+        for c in chunks
+        if c.get("index_variant")
+    })
+
+    chunking_strategies = sorted({
+        c.get("chunking_strategy")
+        for c in chunks
+        if c.get("chunking_strategy")
+    })
     validation = response.get("validation")
     status = response.get("status")
 
@@ -191,6 +200,8 @@ def run_one(client: OpenAI, item: dict, experiment: str) -> dict:
         "num_chunks": len(chunks),
         "chunk_ids": json.dumps([c.get("chunk_id") for c in chunks], ensure_ascii=False),
         "chunk_sections": json.dumps(get_chunk_sections(chunks), ensure_ascii=False),
+        "index_variants": json.dumps(index_variants, ensure_ascii=False),
+       "chunking_strategies": json.dumps(chunking_strategies, ensure_ascii=False),
         **retrieval_metrics,
         **behavior_metrics,
         **validation_metrics,

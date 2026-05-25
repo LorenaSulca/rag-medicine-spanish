@@ -119,17 +119,26 @@ class RAGPipeline:
             )
 
     def _retrieve(self, question: str) -> RetrievalResult:
+        index_variant = self.config.get("index_variant", "sections")
+
         if self.config.get("dynamic_k", False):
-            raw_chunks, signals, medspaner_raw = retrieve_dynamic(question)
+            raw_chunks, signals, medspaner_raw = retrieve_dynamic(
+                query_text=question,
+                index_variant=index_variant,
+            )
 
         elif self.config.get("hybrid_retrieval", False):
             raw_chunks, signals, medspaner_raw = retrieve_hybrid(
-                question,
+                query_text=question,
                 dynamic_k=False,
+                index_variant=index_variant,
             )
 
         else:
-            raw_chunks, signals, medspaner_raw = retrieve_base(question)
+            raw_chunks, signals, medspaner_raw = retrieve_base(
+                question=question,
+                index_variant=index_variant,
+            )
 
         chunks = [Chunk.from_dict(ch) for ch in raw_chunks]
 
@@ -138,7 +147,7 @@ class RAGPipeline:
             signals=signals,
             medspaner_raw=medspaner_raw,
         )
-
+    
     def _generate(
         self,
         question: str,

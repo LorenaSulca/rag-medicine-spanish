@@ -16,10 +16,18 @@ client = OpenAI(api_key=api_key)
 EMBEDDING_MODEL = "text-embedding-3-small"
 MAX_TOKENS = 800
 
-OUTPUT_DIR = "../vector_index"
-INDEX_PATH = os.path.join(OUTPUT_DIR, "index.faiss")
-META_PATH = os.path.join(OUTPUT_DIR, "metadata.json")
-MAP_PATH = os.path.join(OUTPUT_DIR, "mapping.json")
+BASE_OUTPUT_DIR = "../vector_index"
+
+
+def get_index_paths(index_variant: str) -> dict:
+    output_dir = os.path.join(BASE_OUTPUT_DIR, index_variant)
+
+    return {
+        "output_dir": output_dir,
+        "index_path": os.path.join(output_dir, "index.faiss"),
+        "meta_path": os.path.join(output_dir, "metadata.json"),
+        "map_path": os.path.join(output_dir, "mapping.json"),
+    }
 
 
 def clip_text_to_max_tokens(texto: str) -> str:
@@ -61,7 +69,12 @@ def validate_chunk(chunk: dict, idx: int):
         raise ValueError(f"Chunk #{idx} tiene texto vacío.")
 
 
-def build_metadata(chunk: dict, documento_id: str, texto: str) -> dict:
+def build_metadata(
+    chunk: dict,
+    documento_id: str,
+    texto: str,
+    index_variant: str,
+) -> dict:
     chunk_uid = chunk.get("uid") or f"{documento_id}_{chunk['chunk_id']}"
 
     return {
@@ -69,19 +82,17 @@ def build_metadata(chunk: dict, documento_id: str, texto: str) -> dict:
         "document_id": chunk.get("document_id", documento_id),
         "chunk_id": chunk["chunk_id"],
 
-        # Metadata estructural por sección
+        "index_variant": index_variant,
+        "chunking_strategy": chunk.get("chunking_strategy", index_variant),
+
         "section_id": chunk.get("section_id"),
         "section_name": chunk.get("section_name"),
         "section_number": chunk.get("section_number"),
 
-        # Metadata biomédica
         "entities": chunk.get("entities", {}),
 
-        # Posición documental
         "start": chunk["start"],
         "end": chunk["end"],
-
-        # Texto finalmente indexado
         "text": texto,
     }
 
@@ -89,19 +100,23 @@ def build_metadata(chunk: dict, documento_id: str, texto: str) -> dict:
 def indexar_faiss(
     chunks_json_path: str,
     documento_id: str,
+    index_variant: str,
     reset_index: bool = False,
 ):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    paths = get_index_paths(index_variant)
+
+    os.makedirs(paths["output_dir"], exist_ok=True)
 
     if reset_index:
-        for path in [INDEX_PATH, META_PATH, MAP_PATH]:
+        for path in [paths["index_path"], paths["meta_path"], paths["map_path"]]:
             if os.path.exists(path):
                 os.remove(path)
-        print("Índice anterior eliminado.")
+        print(f"Índice anterior eliminado para variante: {index_variant}")
 
     chunks = load_chunks(chunks_json_path)
 
     print(f"Se encontraron {len(chunks)} chunks para indexar.")
+    print(f"Variante de índice: {index_variant}")
 
     embeddings = []
     metadata_list = []
@@ -110,11 +125,17 @@ def indexar_faiss(
         validate_chunk(chunk, idx)
 
         texto = clip_text_to_max_tokens(chunk["text"])
-        metadata = build_metadata(chunk, documento_id, texto)
+        metadata = build_metadata(
+            chunk=chunk,
+            documento_id=documento_id,
+            texto=texto,
+            index_variant=index_variant,
+        )
 
         print(
             f"Embedding → {metadata['uid']} "
-            f"| sección={metadata.get('section_name')}"
+            f"| strategy={metadata.get('chunking_strategy')} "
+            f"| section={metadata.get('section_name')}"
         )
 
         emb = generar_embedding(texto)
@@ -128,9 +149,9 @@ def indexar_faiss(
     matrix_new = np.vstack(embeddings).astype("float32")
     faiss.normalize_L2(matrix_new)
 
-    if os.path.exists(INDEX_PATH):
+    if os.path.exists(paths["index_path"]):
         print("Cargando índice existente...")
-        index = faiss.read_index(INDEX_PATH)
+        index = faiss.read_index(paths["index_path"])
 
         if index.d != matrix_new.shape[1]:
             raise ValueError("Dimensión de embedding incompatible con el índice existente.")
@@ -141,24 +162,24 @@ def indexar_faiss(
         index = faiss.IndexFlatIP(matrix_new.shape[1])
         index.add(matrix_new)
 
-    faiss.write_index(index, INDEX_PATH)
-    print(f"Índice actualizado guardado en {INDEX_PATH}")
+    faiss.write_index(index, paths["index_path"])
+    print(f"Índice actualizado guardado en {paths['index_path']}")
 
-    if os.path.exists(META_PATH):
-        with open(META_PATH, "r", encoding="utf-8") as f:
+    if os.path.exists(paths["meta_path"]):
+        with open(paths["meta_path"], "r", encoding="utf-8") as f:
             old_meta = json.load(f)
     else:
         old_meta = []
 
     merged_meta = old_meta + metadata_list
 
-    with open(META_PATH, "w", encoding="utf-8") as f:
+    with open(paths["meta_path"], "w", encoding="utf-8") as f:
         json.dump(merged_meta, f, indent=2, ensure_ascii=False)
 
     print("Metadata actualizada.")
 
-    if os.path.exists(MAP_PATH):
-        with open(MAP_PATH, "r", encoding="utf-8") as f:
+    if os.path.exists(paths["map_path"]):
+        with open(paths["map_path"], "r", encoding="utf-8") as f:
             old_map = json.load(f)
     else:
         old_map = {}
@@ -172,7 +193,7 @@ def indexar_faiss(
 
     merged_map = {**old_map, **new_map}
 
-    with open(MAP_PATH, "w", encoding="utf-8") as f:
+    with open(paths["map_path"], "w", encoding="utf-8") as f:
         json.dump(merged_map, f, indent=2, ensure_ascii=False)
 
     print("Mapping actualizado.")
@@ -181,25 +202,32 @@ def indexar_faiss(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Indexación FAISS para chunks seccionados de medicamentos."
+        description="Indexación FAISS para variantes de chunking."
     )
 
     parser.add_argument(
         "chunks_file",
-        help="Nombre del archivo JSON dentro de data/chunks, ej: paracetamol_chunks_sectioned.json",
+        help="Nombre del archivo JSON dentro de data/chunks.",
     )
 
     parser.add_argument(
         "documento_id",
         nargs="?",
         default=None,
-        help="ID del documento. Si no se indica, se usa el nombre del archivo sin .json",
+        help="ID del documento. Si no se indica, se usa el nombre del archivo sin .json.",
+    )
+
+    parser.add_argument(
+        "--index-variant",
+        choices=["flat", "sections"],
+        required=True,
+        help="Variante de índice a construir.",
     )
 
     parser.add_argument(
         "--reset",
         action="store_true",
-        help="Elimina el índice anterior antes de indexar.",
+        help="Elimina el índice anterior de esa variante antes de indexar.",
     )
 
     args = parser.parse_args()
@@ -218,11 +246,13 @@ if __name__ == "__main__":
     print("\n=== Indexando FAISS ===")
     print(f"Archivo chunks: {chunks_json_path}")
     print(f"Documento ID: {documento_id}")
+    print(f"Variante índice: {args.index_variant}")
     print(f"Reset index: {args.reset}\n")
 
     indexar_faiss(
         chunks_json_path=chunks_json_path,
         documento_id=documento_id,
+        index_variant=args.index_variant,
         reset_index=args.reset,
     )
 
