@@ -6,141 +6,154 @@ BASE_THRESHOLDS = {
 
 
 EXPERIMENTS = {
-    # =========================
-    # Experimentos originales
-    # =========================
 
-    "baseline": {
-        "index_variant": "sections",
+    # =========================================================
+    # BASELINES
+    # =========================================================
+
+    "baseline_flat_openai": {
         "hybrid_retrieval": False,
         "citation_prompt": False,
         "sentence_validation": False,
         "dynamic_k": False,
         "refine_generation": False,
+
+        "chunking_variant": "flat",
+        "embedding_model": "openai",
     },
 
-    "p1_retrieval": {
-        "index_variant": "sections",
-        "hybrid_retrieval": True,
+    "baseline_sections_openai": {
+        "hybrid_retrieval": False,
         "citation_prompt": False,
         "sentence_validation": False,
         "dynamic_k": False,
         "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "openai",
     },
 
-    "p1_citations": {
-        "index_variant": "sections",
-        "hybrid_retrieval": True,
-        "citation_prompt": True,
+    "baseline_sections_e5": {
+        "hybrid_retrieval": False,
+        "citation_prompt": False,
         "sentence_validation": False,
         "dynamic_k": False,
         "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "multilingual_e5",
     },
 
-    "propuesta_1_full": {
-        "index_variant": "sections",
+    "baseline_sections_medcpt": {
+        "hybrid_retrieval": False,
+        "citation_prompt": False,
+        "sentence_validation": False,
+        "dynamic_k": False,
+        "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "medcpt",
+    },
+
+    # =========================================================
+    # PROPUESTA 1
+    # =========================================================
+
+    "propuesta_1_full_openai": {
         "hybrid_retrieval": True,
         "citation_prompt": True,
         "sentence_validation": True,
         "dynamic_k": False,
         "refine_generation": False,
-        **BASE_THRESHOLDS,
+
+        "chunking_variant": "sections",
+        "embedding_model": "openai",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
 
-    "p2_dynamic_retrieval": {
-        "index_variant": "sections",
+    "propuesta_1_full_e5": {
         "hybrid_retrieval": True,
-        "dynamic_k": True,
         "citation_prompt": True,
         "sentence_validation": True,
+        "dynamic_k": False,
         "refine_generation": False,
-        "multi_validation": False,
-        **BASE_THRESHOLDS,
+
+        "chunking_variant": "sections",
+        "embedding_model": "multilingual_e5",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
 
-    "p2_refine": {
-        "index_variant": "sections",
+    "propuesta_1_full_medcpt": {
         "hybrid_retrieval": True,
-        "dynamic_k": True,
         "citation_prompt": True,
         "sentence_validation": True,
-        "refine_generation": True,
-        "multi_validation": False,
-        **BASE_THRESHOLDS,
+        "dynamic_k": False,
+        "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "medcpt",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
 
-    "propuesta_2_full": {
-        "index_variant": "sections",
+    # =========================================================
+    # PROPUESTA 2
+    # =========================================================
+
+    "propuesta_2_full_openai": {
         "hybrid_retrieval": True,
         "dynamic_k": True,
         "citation_prompt": True,
         "sentence_validation": True,
         "refine_generation": True,
         "multi_validation": True,
-        **BASE_THRESHOLDS,
+
+        "chunking_variant": "sections",
+        "embedding_model": "openai",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
 
-    # =========================
-    # Experimentos: flat vs sections
-    # =========================
-
-    "baseline_flat": {
-        "index_variant": "flat",
-        "hybrid_retrieval": False,
-        "citation_prompt": False,
-        "sentence_validation": False,
-        "dynamic_k": False,
-        "refine_generation": False,
-    },
-
-    "baseline_sections": {
-        "index_variant": "sections",
-        "hybrid_retrieval": False,
-        "citation_prompt": False,
-        "sentence_validation": False,
-        "dynamic_k": False,
-        "refine_generation": False,
-    },
-
-    "propuesta_1_full_flat": {
-        "index_variant": "flat",
-        "hybrid_retrieval": True,
-        "citation_prompt": True,
-        "sentence_validation": True,
-        "dynamic_k": False,
-        "refine_generation": False,
-        **BASE_THRESHOLDS,
-    },
-
-    "propuesta_1_full_sections": {
-        "index_variant": "sections",
-        "hybrid_retrieval": True,
-        "citation_prompt": True,
-        "sentence_validation": True,
-        "dynamic_k": False,
-        "refine_generation": False,
-        **BASE_THRESHOLDS,
-    },
-
-    "propuesta_2_full_flat": {
-        "index_variant": "flat",
+    "propuesta_2_full_e5": {
         "hybrid_retrieval": True,
         "dynamic_k": True,
         "citation_prompt": True,
         "sentence_validation": True,
         "refine_generation": True,
         "multi_validation": True,
-        **BASE_THRESHOLDS,
+
+        "chunking_variant": "sections",
+        "embedding_model": "multilingual_e5",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
 
-    "propuesta_2_full_sections": {
-        "index_variant": "sections",
+    "propuesta_2_full_medcpt": {
         "hybrid_retrieval": True,
         "dynamic_k": True,
         "citation_prompt": True,
         "sentence_validation": True,
         "refine_generation": True,
         "multi_validation": True,
-        **BASE_THRESHOLDS,
+
+        "chunking_variant": "sections",
+        "embedding_model": "medcpt",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
     },
+
 }

@@ -5,18 +5,41 @@ import os
 import faiss
 import numpy as np
 import tiktoken
-from openai import OpenAI
 
-from retrieval.utils_env import get_openai_api_key, get_data_dir
+from retrieval.utils_env import get_data_dir
+from embeddings.factory import get_embedder
 
 
-api_key = get_openai_api_key()
-client = OpenAI(api_key=api_key)
-
-EMBEDDING_MODEL = "text-embedding-3-small"
 MAX_TOKENS = 800
-
 BASE_OUTPUT_DIR = "../vector_index"
+
+
+def normalize_embedding_model_name(name: str) -> str:
+    name = name.lower().strip()
+
+    aliases = {
+        "e5": "multilingual_e5",
+        "multilingual-e5": "multilingual_e5",
+        "multilingual_e5": "multilingual_e5",
+        "openai": "openai",
+        "medcpt": "medcpt",
+    }
+
+    if name not in aliases:
+        raise ValueError(
+            f"embedding_model no soportado: {name}. "
+            f"Opciones: openai, multilingual_e5, medcpt"
+        )
+
+    return aliases[name]
+
+
+def build_index_variant(
+    chunking_variant: str,
+    embedding_model: str,
+) -> str:
+    embedding_model = normalize_embedding_model_name(embedding_model)
+    return f"{chunking_variant}_{embedding_model}"
 
 
 def get_index_paths(index_variant: str) -> dict:
@@ -26,7 +49,6 @@ def get_index_paths(index_variant: str) -> dict:
         "output_dir": output_dir,
         "index_path": os.path.join(output_dir, "index.faiss"),
         "meta_path": os.path.join(output_dir, "metadata.json"),
-        "map_path": os.path.join(output_dir, "mapping.json"),
     }
 
 
@@ -38,14 +60,6 @@ def clip_text_to_max_tokens(texto: str) -> str:
         return texto
 
     return enc.decode(tokens[:MAX_TOKENS])
-
-
-def generar_embedding(texto: str) -> np.ndarray:
-    resp = client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=texto,
-    )
-    return np.array(resp.data[0].embedding, dtype="float32")
 
 
 def load_chunks(chunks_json_path: str) -> list[dict]:
@@ -74,6 +88,8 @@ def build_metadata(
     documento_id: str,
     texto: str,
     index_variant: str,
+    chunking_variant: str,
+    embedding_model: str,
 ) -> dict:
     chunk_uid = chunk.get("uid") or f"{documento_id}_{chunk['chunk_id']}"
 
@@ -83,7 +99,8 @@ def build_metadata(
         "chunk_id": chunk["chunk_id"],
 
         "index_variant": index_variant,
-        "chunking_strategy": chunk.get("chunking_strategy", index_variant),
+        "chunking_strategy": chunk.get("chunking_strategy", chunking_variant),
+        "embedding_model": embedding_model,
 
         "section_id": chunk.get("section_id"),
         "section_name": chunk.get("section_name"),
@@ -100,23 +117,33 @@ def build_metadata(
 def indexar_faiss(
     chunks_json_path: str,
     documento_id: str,
-    index_variant: str,
+    chunking_variant: str,
+    embedding_model: str,
     reset_index: bool = False,
 ):
-    paths = get_index_paths(index_variant)
+    embedding_model = normalize_embedding_model_name(embedding_model)
+    index_variant = build_index_variant(
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
+    )
 
+    paths = get_index_paths(index_variant)
     os.makedirs(paths["output_dir"], exist_ok=True)
 
     if reset_index:
-        for path in [paths["index_path"], paths["meta_path"], paths["map_path"]]:
+        for path in [paths["index_path"], paths["meta_path"]]:
             if os.path.exists(path):
                 os.remove(path)
+
         print(f"Índice anterior eliminado para variante: {index_variant}")
 
+    embedder = get_embedder(embedding_model)
     chunks = load_chunks(chunks_json_path)
 
     print(f"Se encontraron {len(chunks)} chunks para indexar.")
-    print(f"Variante de índice: {index_variant}")
+    print(f"Chunking variant: {chunking_variant}")
+    print(f"Embedding model: {embedding_model}")
+    print(f"Index variant: {index_variant}")
 
     embeddings = []
     metadata_list = []
@@ -125,20 +152,24 @@ def indexar_faiss(
         validate_chunk(chunk, idx)
 
         texto = clip_text_to_max_tokens(chunk["text"])
+
         metadata = build_metadata(
             chunk=chunk,
             documento_id=documento_id,
             texto=texto,
             index_variant=index_variant,
+            chunking_variant=chunking_variant,
+            embedding_model=embedding_model,
         )
 
         print(
             f"Embedding → {metadata['uid']} "
             f"| strategy={metadata.get('chunking_strategy')} "
+            f"| embedding={embedding_model} "
             f"| section={metadata.get('section_name')}"
         )
 
-        emb = generar_embedding(texto)
+        emb = embedder.embed_document(texto)
 
         embeddings.append(emb)
         metadata_list.append(metadata)
@@ -154,7 +185,10 @@ def indexar_faiss(
         index = faiss.read_index(paths["index_path"])
 
         if index.d != matrix_new.shape[1]:
-            raise ValueError("Dimensión de embedding incompatible con el índice existente.")
+            raise ValueError(
+                f"Dimensión incompatible. Índice: {index.d}, "
+                f"nuevo embedding: {matrix_new.shape[1]}"
+            )
 
         index.add(matrix_new)
     else:
@@ -177,32 +211,12 @@ def indexar_faiss(
         json.dump(merged_meta, f, indent=2, ensure_ascii=False)
 
     print("Metadata actualizada.")
-
-    if os.path.exists(paths["map_path"]):
-        with open(paths["map_path"], "r", encoding="utf-8") as f:
-            old_map = json.load(f)
-    else:
-        old_map = {}
-
-    base_offset = len(old_map)
-    new_map = {}
-
-    for i, meta in enumerate(metadata_list):
-        uid = meta["uid"]
-        new_map[uid] = base_offset + i
-
-    merged_map = {**old_map, **new_map}
-
-    with open(paths["map_path"], "w", encoding="utf-8") as f:
-        json.dump(merged_map, f, indent=2, ensure_ascii=False)
-
-    print("Mapping actualizado.")
     print("\nIndexación FAISS completada.\n")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Indexación FAISS para variantes de chunking."
+        description="Indexación FAISS para variantes de chunking y embeddings."
     )
 
     parser.add_argument(
@@ -218,10 +232,17 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--index-variant",
+        "--chunking-variant",
         choices=["flat", "sections"],
         required=True,
-        help="Variante de índice a construir.",
+        help="Variante de chunking usada para crear los chunks.",
+    )
+
+    parser.add_argument(
+        "--embedding-model",
+        choices=["openai", "multilingual_e5", "e5", "medcpt"],
+        required=True,
+        help="Modelo de embeddings usado para indexar.",
     )
 
     parser.add_argument(
@@ -246,13 +267,15 @@ if __name__ == "__main__":
     print("\n=== Indexando FAISS ===")
     print(f"Archivo chunks: {chunks_json_path}")
     print(f"Documento ID: {documento_id}")
-    print(f"Variante índice: {args.index_variant}")
+    print(f"Chunking variant: {args.chunking_variant}")
+    print(f"Embedding model: {args.embedding_model}")
     print(f"Reset index: {args.reset}\n")
 
     indexar_faiss(
         chunks_json_path=chunks_json_path,
         documento_id=documento_id,
-        index_variant=args.index_variant,
+        chunking_variant=args.chunking_variant,
+        embedding_model=args.embedding_model,
         reset_index=args.reset,
     )
 

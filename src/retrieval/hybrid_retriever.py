@@ -1,7 +1,8 @@
 import faiss
 
 from retrieval.retrieval_faiss import (
-    embed,
+    embed_query,
+    build_index_variant,
     load_faiss,
     extract_query_signals,
     filter_by_medical_signals,
@@ -16,13 +17,23 @@ from .rrf import reciprocal_rank_fusion
 def retrieve_faiss_candidates(
     query_text: str,
     top_k: int = 10,
-    index_variant: str = "sections",
+    chunking_variant: str = "sections",
+    embedding_model: str = "openai",
 ) -> list[dict]:
     """
     Recupera candidatos usando FAISS para la variante experimental indicada.
     """
 
-    query_emb = embed(query_text)
+    index_variant = build_index_variant(
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
+    )
+
+    query_emb = embed_query(
+        text=query_text,
+        embedding_model=embedding_model,
+    )
+
     query_emb = query_emb.reshape(1, -1)
     faiss.normalize_L2(query_emb)
 
@@ -44,6 +55,8 @@ def retrieve_faiss_candidates(
         meta["faiss_score"] = float(score)
         meta["faiss_rank"] = rank
         meta["index_variant"] = meta.get("index_variant", index_variant)
+        meta["chunking_strategy"] = meta.get("chunking_strategy", chunking_variant)
+        meta["embedding_model"] = meta.get("embedding_model", embedding_model)
         meta["_retrieval_source"] = "faiss"
 
         candidates.append(meta)
@@ -56,7 +69,8 @@ def retrieve_hybrid(
     top_k: int = TOP_K,
     candidate_k: int = 10,
     dynamic_k: bool = False,
-    index_variant: str = "sections",
+    chunking_variant: str = "sections",
+    embedding_model: str = "openai",
 ):
     """
     Retrieval híbrido:
@@ -75,13 +89,15 @@ def retrieve_hybrid(
     faiss_candidates = retrieve_faiss_candidates(
         query_text=query_text,
         top_k=candidate_k,
-        index_variant=index_variant,
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
     )
 
     bm25_candidates = retrieve_bm25(
         query=query_text,
         top_k=candidate_k,
-        index_variant=index_variant,
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
     )
 
     fused_candidates = reciprocal_rank_fusion(

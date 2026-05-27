@@ -131,7 +131,8 @@ def retrieve_dynamic(
     default_k: int = TOP_K,
     max_k: int = 8,
     candidate_k: int = 12,
-    index_variant: str = "sections",
+    chunking_variant: str = "sections",
+    embedding_model: str = "openai",
 ):
     """
     Retrieval dinámico para Propuesta 2.
@@ -156,12 +157,14 @@ def retrieve_dynamic(
         top_k=dynamic_k,
         candidate_k=max(candidate_k, dynamic_k),
         dynamic_k=False,
-        index_variant=index_variant,
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
     )
 
     for ch in chunks:
         ch["dynamic_k"] = dynamic_k
         ch["query_complexity"] = complexity
-        ch["index_variant"] = ch.get("index_variant", index_variant)
+        ch["chunking_strategy"] = ch.get("chunking_strategy", chunking_variant)
+        ch["embedding_model"] = ch.get("embedding_model", embedding_model)
 
     return chunks, signals, medspaner_output

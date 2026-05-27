@@ -119,25 +119,29 @@ class RAGPipeline:
             )
 
     def _retrieve(self, question: str) -> RetrievalResult:
-        index_variant = self.config.get("index_variant", "sections")
+        chunking_variant = self.config.get("chunking_variant", "sections")
+        embedding_model = self.config.get("embedding_model", "openai")
 
         if self.config.get("dynamic_k", False):
             raw_chunks, signals, medspaner_raw = retrieve_dynamic(
                 query_text=question,
-                index_variant=index_variant,
+                chunking_variant=chunking_variant,
+                embedding_model=embedding_model,
             )
 
         elif self.config.get("hybrid_retrieval", False):
             raw_chunks, signals, medspaner_raw = retrieve_hybrid(
                 query_text=question,
                 dynamic_k=False,
-                index_variant=index_variant,
+                chunking_variant=chunking_variant,
+                embedding_model=embedding_model,
             )
 
         else:
             raw_chunks, signals, medspaner_raw = retrieve_base(
                 question=question,
-                index_variant=index_variant,
+                chunking_variant=chunking_variant,
+                embedding_model=embedding_model,
             )
 
         chunks = [Chunk.from_dict(ch) for ch in raw_chunks]
