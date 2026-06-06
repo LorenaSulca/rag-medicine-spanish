@@ -7,14 +7,6 @@ from retrieval.medspaner_bridge import run_medspaner_question
 
 
 def infer_query_complexity(question: str, signals: dict) -> dict:
-    """
-    Calcula una complejidad simple de la consulta para decidir cuántos chunks recuperar.
-
-    La idea es evitar un K fijo:
-    - preguntas simples: menos chunks
-    - preguntas con varias entidades o varias intenciones: más chunks
-    """
-
     q = question.lower()
 
     entity_count = (
@@ -26,55 +18,30 @@ def infer_query_complexity(question: str, signals: dict) -> dict:
 
     intent_terms = {
         "dose": [
-            "dosis",
-            "cuánto",
-            "cuanta",
-            "cuántos",
-            "cuantas",
-            "mg",
-            "gramos",
-            "comprimidos",
+            "dosis", "cuánto", "cuanta", "cuántos", "cuantas",
+            "mg", "gramos", "comprimidos",
         ],
         "contraindications": [
-            "contraindicaciones",
-            "contraindicado",
-            "no tome",
-            "no debe",
-            "alérgico",
-            "alergia",
+            "contraindicaciones", "contraindicado", "no tome",
+            "no debe", "alérgico", "alergia",
         ],
         "adverse_effects": [
-            "efectos adversos",
-            "efectos secundarios",
-            "reacciones adversas",
-            "puede causar",
+            "efectos adversos", "efectos secundarios",
+            "reacciones adversas", "puede causar",
         ],
         "interactions": [
-            "interacciones",
-            "interactúa",
-            "interactua",
-            "junto con",
-            "alcohol",
-            "otros medicamentos",
+            "interacciones", "interactúa", "interactua",
+            "junto con", "alcohol", "otros medicamentos",
         ],
         "pregnancy_lactation": [
-            "embarazo",
-            "lactancia",
-            "fertilidad",
-            "leche materna",
+            "embarazo", "lactancia", "fertilidad", "leche materna",
         ],
         "overdose": [
-            "sobredosis",
-            "más de la dosis",
-            "más paracetamol",
-            "más medicamento",
-            "más recomendado",
+            "sobredosis", "más de la dosis", "más paracetamol",
+            "más medicamento", "más recomendado",
         ],
         "missed_dose": [
-            "olvidó",
-            "olvido",
-            "olvidar",
-            "dosis olvidada",
+            "olvidó", "olvido", "olvidar", "dosis olvidada",
         ],
     }
 
@@ -110,10 +77,6 @@ def infer_query_complexity(question: str, signals: dict) -> dict:
 
 
 def choose_dynamic_k(complexity: dict) -> int:
-    """
-    Traduce la complejidad de la pregunta a un K dinámico.
-    """
-
     level = complexity["level"]
 
     if level == "low":
@@ -133,17 +96,11 @@ def retrieve_dynamic(
     candidate_k: int = 12,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    noise_injection: bool = False,
+    noise_chunks: int = 2,
+    noise_seed: int = 42,
+    noise_placement: str = "end",
 ):
-    """
-    Retrieval dinámico para Propuesta 2.
-
-    Flujo:
-    1. Analiza la pregunta con MEDSPANER.
-    2. Estima complejidad de consulta.
-    3. Decide K dinámico.
-    4. Ejecuta retrieval híbrido usando ese K.
-    """
-
     medspaner_output = run_medspaner_question(query_text)
     signals = extract_query_signals(medspaner_output)
 
@@ -159,6 +116,10 @@ def retrieve_dynamic(
         dynamic_k=False,
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        noise_injection=noise_injection,
+        noise_chunks=noise_chunks,
+        noise_seed=noise_seed,
+        noise_placement=noise_placement,
     )
 
     for ch in chunks:

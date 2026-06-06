@@ -167,6 +167,20 @@ def run_one(client: OpenAI, item: dict, experiment: str) -> dict:
     response = rag.query(item["question"])
 
     chunks = response.get("chunks", [])
+
+    noise_chunks = [
+        c for c in chunks
+        if c.get("_is_noise") is True
+    ]
+
+    noise_count = len(noise_chunks)
+
+    noise_sections = sorted({
+        normalize_section_name(c.get("section_name"))
+        for c in noise_chunks
+        if c.get("section_name")
+    })
+
     index_variants = sorted({
         c.get("index_variant")
         for c in chunks
@@ -200,6 +214,9 @@ def run_one(client: OpenAI, item: dict, experiment: str) -> dict:
         "num_chunks": len(chunks),
         "chunk_ids": json.dumps([c.get("chunk_id") for c in chunks], ensure_ascii=False),
         "chunk_sections": json.dumps(get_chunk_sections(chunks), ensure_ascii=False),
+        "noise_count": noise_count,
+        "noise_sections": json.dumps(noise_sections, ensure_ascii=False),
+        "has_noise": noise_count > 0,
         "index_variants": json.dumps(index_variants, ensure_ascii=False),
        "chunking_strategies": json.dumps(chunking_strategies, ensure_ascii=False),
         **retrieval_metrics,
@@ -246,6 +263,8 @@ def summarize(rows: list[dict]) -> list[dict]:
             "avg_numeric_support_rate": safe_mean([r["numeric_support_rate"] for r in exp_rows]),
             "avg_unsupported_numeric_count": safe_mean([r["unsupported_numeric_count"] for r in exp_rows]),
             "avg_num_chunks": safe_mean([r["num_chunks"] for r in exp_rows]),
+            "avg_noise_count": safe_mean([r.get("noise_count") for r in exp_rows]),
+            "noise_injected_rate": sum(bool(r.get("has_noise")) for r in exp_rows) / n,
         })
 
     return summary
@@ -321,6 +340,9 @@ def main():
                     "numeric_support_rate": None,
                     "unsupported_numeric_count": None,
                     "error": str(exc),
+                    "noise_count": 0,
+                    "noise_sections": "[]",
+                    "has_noise": False,
                 }
 
             rows.append(row)

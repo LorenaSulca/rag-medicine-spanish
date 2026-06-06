@@ -12,6 +12,7 @@ from retrieval.retrieval_faiss import (
 from .medspaner_bridge import run_medspaner_question
 from .bm25_retriever import retrieve_bm25
 from .rrf import reciprocal_rank_fusion
+from .noise import inject_noise_chunks
 
 
 def retrieve_faiss_candidates(
@@ -20,10 +21,6 @@ def retrieve_faiss_candidates(
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
 ) -> list[dict]:
-    """
-    Recupera candidatos usando FAISS para la variante experimental indicada.
-    """
-
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
@@ -44,10 +41,7 @@ def retrieve_faiss_candidates(
     candidates = []
 
     for rank, (score, idx) in enumerate(zip(scores[0], idxs[0]), start=1):
-        if idx < 0:
-            continue
-
-        if idx >= len(metadata):
+        if idx < 0 or idx >= len(metadata):
             continue
 
         meta = dict(metadata[idx])
@@ -71,20 +65,30 @@ def retrieve_hybrid(
     dynamic_k: bool = False,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    noise_injection: bool = False,
+    noise_chunks: int = 2,
+    noise_seed: int = 42,
+    noise_placement: str = "end",
 ):
     """
     Retrieval híbrido:
     1. MEDSPANER sobre la consulta.
-    2. Recuperación semántica con FAISS.
-    3. Recuperación léxica con BM25.
-    4. Fusión con RRF.
-    5. Reranking heurístico por señales biomédicas.
+    2. FAISS.
+    3. BM25.
+    4. RRF.
+    5. Reranking biomédico.
+    6. Inyección opcional de ruido semántico.
     """
 
     medspaner_output = run_medspaner_question(query_text)
     signals = extract_query_signals(medspaner_output)
 
     final_k = top_k
+
+    index_variant = build_index_variant(
+        chunking_variant=chunking_variant,
+        embedding_model=embedding_model,
+    )
 
     faiss_candidates = retrieve_faiss_candidates(
         query_text=query_text,
@@ -107,5 +111,24 @@ def retrieve_hybrid(
     )
 
     refined = filter_by_medical_signals(fused_candidates, signals)
+    clean_context = refined[:final_k]
 
-    return refined[:final_k], signals, medspaner_output
+    if not noise_injection:
+        return clean_context, signals, medspaner_output
+
+    _, metadata = load_faiss(index_variant=index_variant)
+
+    noisy_context = inject_noise_chunks(
+        retrieved_chunks=clean_context,
+        metadata=metadata,
+        noise_chunks=noise_chunks,
+        seed=noise_seed,
+        placement=noise_placement,
+    )
+
+    for ch in noisy_context:
+        ch["_noise_injection_enabled"] = True
+        ch["_noise_chunks_requested"] = noise_chunks
+        ch["_noise_placement"] = noise_placement
+
+    return noisy_context, signals, medspaner_output

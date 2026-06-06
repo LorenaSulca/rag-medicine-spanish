@@ -122,11 +122,20 @@ class RAGPipeline:
         chunking_variant = self.config.get("chunking_variant", "sections")
         embedding_model = self.config.get("embedding_model", "openai")
 
+        noise_injection = self.config.get("noise_injection", False)
+        noise_chunks = self.config.get("noise_chunks", 2)
+        noise_seed = self.config.get("noise_seed", 42)
+        noise_placement = self.config.get("noise_placement", "end")
+
         if self.config.get("dynamic_k", False):
             raw_chunks, signals, medspaner_raw = retrieve_dynamic(
                 query_text=question,
                 chunking_variant=chunking_variant,
                 embedding_model=embedding_model,
+                noise_injection=noise_injection,
+                noise_chunks=noise_chunks,
+                noise_seed=noise_seed,
+                noise_placement=noise_placement,
             )
 
         elif self.config.get("hybrid_retrieval", False):
@@ -135,6 +144,10 @@ class RAGPipeline:
                 dynamic_k=False,
                 chunking_variant=chunking_variant,
                 embedding_model=embedding_model,
+                noise_injection=noise_injection,
+                noise_chunks=noise_chunks,
+                noise_seed=noise_seed,
+                noise_placement=noise_placement,
             )
 
         else:

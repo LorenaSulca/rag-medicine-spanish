@@ -155,5 +155,134 @@ EXPERIMENTS = {
         "usr_partial_threshold": 0.01,
         "usr_invalid_threshold": 0.50,
     },
+    # =========================================================
+    # NOISE ROBUSTNESS - PROPUESTA 1
+    # =========================================================
 
+    "propuesta_1_full_openai_noisy": {
+        "hybrid_retrieval": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "dynamic_k": False,
+        "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "openai",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
+
+    "propuesta_1_full_e5_noisy": {
+        "hybrid_retrieval": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "dynamic_k": False,
+        "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "multilingual_e5",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
+
+    "propuesta_1_full_medcpt_noisy": {
+        "hybrid_retrieval": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "dynamic_k": False,
+        "refine_generation": False,
+
+        "chunking_variant": "sections",
+        "embedding_model": "medcpt",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
+
+    # =========================================================
+    # NOISE ROBUSTNESS - PROPUESTA 2
+    # =========================================================
+
+    "propuesta_2_full_openai_noisy": {
+        "hybrid_retrieval": True,
+        "dynamic_k": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "refine_generation": True,
+        "multi_validation": True,
+
+        "chunking_variant": "sections",
+        "embedding_model": "openai",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
+
+    "propuesta_2_full_e5_noisy": {
+        "hybrid_retrieval": True,
+        "dynamic_k": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "refine_generation": True,
+        "multi_validation": True,
+
+        "chunking_variant": "sections",
+        "embedding_model": "multilingual_e5",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
+
+    "propuesta_2_full_medcpt_noisy": {
+        "hybrid_retrieval": True,
+        "dynamic_k": True,
+        "citation_prompt": True,
+        "sentence_validation": True,
+        "refine_generation": True,
+        "multi_validation": True,
+
+        "chunking_variant": "sections",
+        "embedding_model": "medcpt",
+
+        "noise_injection": True,
+        "noise_chunks": 2,
+        "noise_seed": 42,
+        "noise_placement": "end",
+
+        "sentence_similarity_threshold": 0.20,
+        "usr_partial_threshold": 0.01,
+        "usr_invalid_threshold": 0.50,
+    },
 }
