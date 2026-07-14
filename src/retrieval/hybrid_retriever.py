@@ -20,10 +20,12 @@ def retrieve_faiss_candidates(
     top_k: int = 10,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    index_suffix: str | None = None,
 ) -> list[dict]:
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     query_emb = embed_query(
@@ -65,6 +67,7 @@ def retrieve_hybrid(
     dynamic_k: bool = False,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    index_suffix: str | None = None,
     noise_injection: bool = False,
     noise_chunks: int = 2,
     noise_seed: int = 42,
@@ -88,6 +91,7 @@ def retrieve_hybrid(
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     faiss_candidates = retrieve_faiss_candidates(
@@ -95,6 +99,7 @@ def retrieve_hybrid(
         top_k=candidate_k,
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     bm25_candidates = retrieve_bm25(
@@ -102,6 +107,7 @@ def retrieve_hybrid(
         top_k=candidate_k,
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     fused_candidates = reciprocal_rank_fusion(

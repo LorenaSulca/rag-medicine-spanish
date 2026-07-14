@@ -25,6 +25,7 @@ def retrieve_bm25(
     top_k: int = 10,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    index_suffix: str | None = None,
 ) -> list[dict]:
     """
     Recuperación léxica BM25 sobre metadata.json correspondiente
@@ -38,6 +39,7 @@ def retrieve_bm25(
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     _, metadata = load_faiss(index_variant=index_variant)

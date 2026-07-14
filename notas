@@ -1,0 +1,43 @@
+##Para cada uno los medicamentos
+
+
+python -m corpus.pdf_text_extractor `
+  ..\data\prospects\paracetamol.pdf `
+  ..\data\text\paracetamol.txt
+
+python -m corpus.run_medspaner `
+  --input ..\data\text\paracetamol.txt `
+  --output ..\data\medspaner\paracetamol_entities.json
+
+##Para generar chunks de todo lo generado previamente
+
+python -m corpus.build_chunks_all 
+
+python -m corpus.index_all --reset-first --include-flat
+
+##Corrupcion
+
+python -m corpus.suggest_corruption_rules --input ..\data\chunks\bactrim_chunks_sectioned_entities.json --document-id bactrim --output ..\data\corruptions\bactrim_suggested_rules.json
+python -m corpus.suggest_corruption_rules --input ..\data\chunks\cetirizina_chunks_sectioned_entities.json --document-id cetirizina --output ..\data\corruptions\cetirizina_suggested_rules.json
+python -m corpus.suggest_corruption_rules --input ..\data\chunks\naproxeno_chunks_sectioned_entities.json --document-id naproxeno --output ..\data\corruptions\naproxeno_suggested_rules.json
+python -m corpus.suggest_corruption_rules --input ..\data\chunks\paracetamol_chunks_sectioned_entities.json --document-id paracetamol --output ..\data\corruptions\paracetamol_suggested_rules.json
+python -m corpus.suggest_corruption_rules --input ..\data\chunks\tramadol_chunks_sectioned_entities.json --document-id tramadol --output ..\data\corruptions\tramadol_suggested_rules.json
+
+python -m corpus.filter_suggested_rules --input ..\data\corruptions\bactrim_suggested_rules.json --output ..\data\corruptions\bactrim_approved_rules.json --max 6
+python -m corpus.filter_suggested_rules --input ..\data\corruptions\cetirizina_suggested_rules.json --output ..\data\corruptions\cetirizina_approved_rules.json --max 6
+python -m corpus.filter_suggested_rules --input ..\data\corruptions\naproxeno_suggested_rules.json --output ..\data\corruptions\naproxeno_approved_rules.json --max 6
+python -m corpus.filter_suggested_rules --input ..\data\corruptions\paracetamol_suggested_rules.json --output ..\data\corruptions\paracetamol_approved_rules.json --max 6
+python -m corpus.filter_suggested_rules --input ..\data\corruptions\tramadol_suggested_rules.json --output ..\data\corruptions\tramadol_approved_rules.json --max 6
+
+python -m evaluation.build_knowledge_noise_dataset `
+  --rules-dir ..\data\corruptions `
+  --pattern "*_approved_rules.json" `
+  --output ..\data\qa\knowledge_noise_5_prospectos.json `
+  --questions-per-rule 3
+
+  python -m evaluation.evaluate_knowledge_noise `
+  --dataset ..\data\qa\knowledge_noise_5_prospectos.json `
+  --output-dir ..\data\results_knowledge_noise `
+  --experiments `
+  p2_openai_knowledge_noise_no_validation `
+  p2_openai_knowledge_noise

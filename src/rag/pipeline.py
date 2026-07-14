@@ -121,6 +121,7 @@ class RAGPipeline:
     def _retrieve(self, question: str) -> RetrievalResult:
         chunking_variant = self.config.get("chunking_variant", "sections")
         embedding_model = self.config.get("embedding_model", "openai")
+        index_suffix = self.config.get("index_suffix")
 
         noise_injection = self.config.get("noise_injection", False)
         noise_chunks = self.config.get("noise_chunks", 2)
@@ -132,6 +133,7 @@ class RAGPipeline:
                 query_text=question,
                 chunking_variant=chunking_variant,
                 embedding_model=embedding_model,
+                index_suffix=index_suffix,
                 noise_injection=noise_injection,
                 noise_chunks=noise_chunks,
                 noise_seed=noise_seed,
@@ -144,6 +146,7 @@ class RAGPipeline:
                 dynamic_k=False,
                 chunking_variant=chunking_variant,
                 embedding_model=embedding_model,
+                index_suffix=index_suffix,
                 noise_injection=noise_injection,
                 noise_chunks=noise_chunks,
                 noise_seed=noise_seed,
@@ -155,6 +158,7 @@ class RAGPipeline:
                 question=question,
                 chunking_variant=chunking_variant,
                 embedding_model=embedding_model,
+                index_suffix=index_suffix,
             )
 
         chunks = [Chunk.from_dict(ch) for ch in raw_chunks]

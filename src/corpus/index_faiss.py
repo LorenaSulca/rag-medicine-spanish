@@ -120,13 +120,15 @@ def indexar_faiss(
     chunking_variant: str,
     embedding_model: str,
     reset_index: bool = False,
+    index_suffix: str | None = None,
 ):
     embedding_model = normalize_embedding_model_name(embedding_model)
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
     )
-
+    if index_suffix:
+        index_variant = f"{index_variant}_{index_suffix}"
     paths = get_index_paths(index_variant)
     os.makedirs(paths["output_dir"], exist_ok=True)
 
@@ -251,10 +253,21 @@ if __name__ == "__main__":
         help="Elimina el índice anterior de esa variante antes de indexar.",
     )
 
+    parser.add_argument(
+        "--chunks-dir",
+        default="chunks",
+        help="Carpeta dentro de data donde está el archivo de chunks. Default: chunks.",
+    )
+
+    parser.add_argument(
+        "--index-suffix",
+        default=None,
+        help="Sufijo opcional para crear una variante de índice separada. Ej: corrupted.",
+    )
     args = parser.parse_args()
 
     data_dir = os.path.dirname(os.getcwd()) + get_data_dir()
-    chunks_json_path = os.path.join(data_dir, "chunks", args.chunks_file)
+    chunks_json_path = os.path.join(data_dir, args.chunks_dir, args.chunks_file)
 
     if not os.path.exists(chunks_json_path):
         raise FileNotFoundError(f"No existe el archivo de chunks: {chunks_json_path}")
@@ -277,6 +290,7 @@ if __name__ == "__main__":
         chunking_variant=args.chunking_variant,
         embedding_model=args.embedding_model,
         reset_index=args.reset,
+        index_suffix=args.index_suffix,
     )
 
     print("Indexación FAISS finalizada.")

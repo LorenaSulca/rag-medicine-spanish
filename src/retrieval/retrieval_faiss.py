@@ -55,11 +55,17 @@ def normalize_chunking_variant(name: str) -> str:
 def build_index_variant(
     chunking_variant: str = DEFAULT_CHUNKING_VARIANT,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    index_suffix: str | None = None,
 ) -> str:
     chunking_variant = normalize_chunking_variant(chunking_variant)
     embedding_model = normalize_embedding_model_name(embedding_model)
 
-    return f"{chunking_variant}_{embedding_model}"
+    index_variant = f"{chunking_variant}_{embedding_model}"
+
+    if index_suffix:
+        index_variant = f"{index_variant}_{index_suffix}"
+
+    return index_variant
 
 
 def get_index_paths(index_variant: str) -> dict:
@@ -222,6 +228,7 @@ def retrieve_chunks(
     top_k: int = TOP_K,
     chunking_variant: str = DEFAULT_CHUNKING_VARIANT,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    index_suffix: str | None = None,
 ):
     """
     Retrieval semántico base con FAISS.
@@ -231,7 +238,7 @@ def retrieve_chunks(
     - top_k: número de chunks a recuperar.
     - chunking_variant: flat o sections.
     - embedding_model: openai, multilingual_e5 o medcpt.
-
+    - index_suffix: sufijo opcional para cargar índices alternativos, por ejemplo "corrupted".
     Retorna:
     - chunks refinados
     - signals extraídas de la consulta
@@ -244,6 +251,7 @@ def retrieve_chunks(
     index_variant = build_index_variant(
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
     )
 
     # 1. Análisis médico con MEDSPANER

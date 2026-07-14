@@ -96,6 +96,7 @@ def retrieve_dynamic(
     candidate_k: int = 12,
     chunking_variant: str = "sections",
     embedding_model: str = "openai",
+    index_suffix: str | None = None,
     noise_injection: bool = False,
     noise_chunks: int = 2,
     noise_seed: int = 42,
@@ -116,6 +117,7 @@ def retrieve_dynamic(
         dynamic_k=False,
         chunking_variant=chunking_variant,
         embedding_model=embedding_model,
+        index_suffix=index_suffix,
         noise_injection=noise_injection,
         noise_chunks=noise_chunks,
         noise_seed=noise_seed,
@@ -128,4 +130,7 @@ def retrieve_dynamic(
         ch["chunking_strategy"] = ch.get("chunking_strategy", chunking_variant)
         ch["embedding_model"] = ch.get("embedding_model", embedding_model)
 
+        if index_suffix:
+            ch["index_suffix"] = index_suffix
+            
     return chunks, signals, medspaner_output
